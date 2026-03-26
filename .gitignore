@@ -1,0 +1,9 @@
+data/
+__pycache__/
+*.pyc
+.env
+node_modules/
+dist/
+.playwright/
+*.egg-info/
+.venv/
