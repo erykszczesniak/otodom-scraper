@@ -1,0 +1,36 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+    env_file:
+      - .env
+    depends_on:
+      - playwright
+    networks:
+      - internal
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+  playwright:
+    image: mcr.microsoft.com/playwright/python:v1.44.0-jammy
+    command: sleep infinity
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
