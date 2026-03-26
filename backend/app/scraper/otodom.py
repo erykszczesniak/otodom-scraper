@@ -80,7 +80,10 @@ METRO_STATIONS = [
 ]
 
 CENTER_POINT = (52.2297, 21.0122)  # Centrum / Palac Kultury
-WALKING_SPEED_KMH = 5.0
+STREET_FACTOR = 1.3  # straight-line to real walking distance correction
+WALKING_MIN_PER_KM = 10  # ~6 km/h brisk walk — 10 min per km
+BUS_TRAM_SPEED_KMH = 15  # avg tram/bus speed in Warsaw including stops
+TRANSIT_OVERHEAD_MIN = 5  # walk to stop + wait for tram/bus
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -91,9 +94,17 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def distance_to_min(lat: float, lon: float, points: list[tuple]) -> int:
+def walking_minutes(lat: float, lon: float, points: list[tuple]) -> int:
+    """Walking time to nearest point — brisk pace, street-corrected."""
     min_km = min(haversine_km(lat, lon, p[0], p[1]) for p in points)
-    return round((min_km / WALKING_SPEED_KMH) * 60)
+    return round(min_km * STREET_FACTOR * WALKING_MIN_PER_KM)
+
+
+def transit_minutes(lat: float, lon: float, point: tuple) -> int:
+    """Public transport (tram/bus) time — walk to stop + wait + ride."""
+    km = haversine_km(lat, lon, point[0], point[1])
+    ride_min = (km * STREET_FACTOR / BUS_TRAM_SPEED_KMH) * 60
+    return round(TRANSIT_OVERHEAD_MIN + ride_min)
 
 
 ROOMS_MAP = {
@@ -220,8 +231,8 @@ def parse_listing_from_item(item: dict) -> dict:
     metro_distance_min = None
     center_distance_min = None
     if latitude and longitude:
-        metro_distance_min = distance_to_min(latitude, longitude, METRO_STATIONS)
-        center_distance_min = distance_to_min(latitude, longitude, [CENTER_POINT])
+        metro_distance_min = walking_minutes(latitude, longitude, METRO_STATIONS)
+        center_distance_min = transit_minutes(latitude, longitude, CENTER_POINT)
 
     return {
         "otodom_id": otodom_id,

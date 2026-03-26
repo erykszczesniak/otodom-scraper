@@ -12,7 +12,7 @@ from app.database import SessionLocal
 from app.models import Listing
 from app.scraper.otodom import (
     USER_AGENTS, METRO_STATIONS, CENTER_POINT,
-    distance_to_min,
+    walking_minutes, transit_minutes,
 )
 
 logger = logging.getLogger(__name__)
@@ -98,8 +98,8 @@ async def enrich_listing(client: httpx.AsyncClient, listing: Listing, db: Sessio
         if lat and lon:
             listing.latitude = lat
             listing.longitude = lon
-            listing.metro_distance_min = distance_to_min(lat, lon, METRO_STATIONS)
-            listing.center_distance_min = distance_to_min(lat, lon, [CENTER_POINT])
+            listing.metro_distance_min = walking_minutes(lat, lon, METRO_STATIONS)
+            listing.center_distance_min = transit_minutes(lat, lon, CENTER_POINT)
 
         listing.last_updated = datetime.utcnow()
         db.commit()
